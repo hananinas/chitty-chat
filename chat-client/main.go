@@ -21,7 +21,7 @@ const (
 var (
 	addrFlag = flag.String("address", addr, "Enter your address, that you want to use on your chat-client")
 	nameFlag = flag.String("name", fmt.Sprintf("%s-%d", name, time.Now().Unix()), "Enter the username you want to use on your chat-client")
-	Lamport  = chat.LamportClock{Node: *nameFlag}
+	lamport  = chat.LamportClock{Node: *nameFlag}
 )
 
 func main() {
@@ -35,15 +35,28 @@ func main() {
 	}
 	defer conn.Close()
 	c := api.NewChatServiceClient(conn)
-	fmt.Printf("c: %v\n", c)
+	join(c)
 
 }
 
 func join(client api.ChatServiceClient) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	_, err := client.Join(ctx, &api.JoinRequest{})
+	lamport.Move()
+
+	res, err := client.Join(ctx, &api.JoinRequest{
+		NodeName: *nameFlag,
+		Lamport:  &api.Lamport{Time: lamport.GetTimestamp(), NodeId: *nameFlag},
+	})
 	if err != nil {
-		log.Fatalf("could not message: %v", err)
+		log.Fatalf("could not connect: %v", err)
 	}
+
+	if res.GetStatus() == api.Status_OK {
+		log.Fatalf("could not join: %v", res.GetStatus())
+	}
+
+	lamport.CompOtherClock(res.Lamport.GetTime())
+
+	log.Printf("Joined chat with name: %s", *nameFlag)
 }
