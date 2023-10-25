@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+option go_package = "https://github.com/hananinas/chitty-chat/api";
 
 message Lamport {
 	uint32 time = 1;
