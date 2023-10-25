@@ -56,6 +56,6 @@ func NewGrpcServer(name string) (*grpc.Server, error) {
 	}
 
 	api.RegisterChatServiceServer(grpcServer, *s)
-	log.Panicf("Starting server %s", name)
+	log.Printf("Starting server %s", name)
 	return grpcServer, nil
 }
