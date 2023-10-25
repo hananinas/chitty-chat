@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"sync"
 
@@ -58,4 +59,18 @@ func NewGrpcServer(name string) (*grpc.Server, error) {
 	api.RegisterChatServiceServer(grpcServer, *s)
 	log.Printf("Starting server %s", name)
 	return grpcServer, nil
+}
+
+// now i want to implement the methods of the server
+// Join is a method that is called when a client wants to join the chat
+// it takes a JoinRequest and returns a JoinResponse
+
+func (s server) Join(ctx context.Context, req *api.JoinRequest) (*api.JoinResponse, error) {
+	log.Printf("a client wants to join the chat")
+
+	// if the client is not in the clients map, add it to the clients map
+	// and return a JoinResponse with a status of OK
+	log.Printf("Client %s joined", req.NodeName)
+
+	return &api.JoinResponse{Status: api.Status_OK}, nil
 }
