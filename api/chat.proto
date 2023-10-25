@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+
+message Lamport {
+	uint32 time = 1;
+	string nodeId = 2;
+}
+//Minimalisic definition of a course
+message Message {
+	Lamport lamport = 1;
+	string content = 2;
+}
+
+enum Result {
+	OK = 0;
+	GENERAL_ERROR = 1;
+	UNAUTHORIZED_ERROR = 2;
+}
+
+message PublishResponse {
+	string messageHash = 1;
+	Lamport lamport = 2;
+	Result result = 3;
+}
+
+message BroadcastSubscription {
+	string receiver = 1;
+}
+
+
+message JoinRequest {
+	string nodeName = 1;
+	Lamport lamport = 2;
+}
+
+message JoinResponse {
+	string nodeId = 1;
+	Result result = 2;
+	Lamport lamport = 3;
+}
+
+message LeaveRequest {
+	string senderId = 1;
+	Lamport lamport =2;
+}
+
+message LeaveResponse {
+	string nodeId = 1;
+	Result result = 2;
+	Lamport lamport = 3;
+}
+
+service ChatService {
+	rpc Join(JoinRequest) returns (JoinResponse);
+	rpc Leave(LeaveRequest) returns (LeaveResponse);
+	rpc Publish (Message) returns (PublishResponse);
+    rpc Broadcast (BroadcastSubscription) returns (stream Message);
+}
