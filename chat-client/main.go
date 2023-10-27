@@ -40,8 +40,6 @@ func main() {
 
 	activeChat(c)
 
-	go broadcatListner(c)
-
 }
 
 // client sends join request
@@ -89,6 +87,7 @@ func leave(client api.ChatServiceClient) {
 
 func activeChat(client api.ChatServiceClient) {
 	active := true
+	go broadcatListner(client)
 
 	for active {
 		prompt := promptui.Select{
@@ -174,5 +173,4 @@ func send(client api.ChatServiceClient, msg string) {
 		log.Fatalf("could not send message: %v", res.GetStatus())
 	}
 
-	fmt.Printf("Message sent: %s", msg)
 }
