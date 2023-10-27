@@ -6,7 +6,7 @@ message Lamport {
 	uint32 time = 1;
 	string nodeId = 2;
 }
-//Minimalisic definition of a course
+
 message Message {
 	Lamport lamport = 1;
 	string content = 2;
@@ -54,6 +54,6 @@ message LeaveResponse {
 service ChatService {
 	rpc Join(JoinRequest) returns (JoinResponse);
 	rpc Leave(LeaveRequest) returns (LeaveResponse);
-	rpc Publish (Message) returns (PublishResponse);
+	rpc Send (Message) returns (PublishResponse);
     rpc Broadcast (BroadcastSubscription) returns (stream Message);
 }

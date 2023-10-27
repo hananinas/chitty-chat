@@ -25,6 +25,10 @@ func (c *LamportClock) GetTimestamp() uint32 {
 	return c.value
 }
 
+func (c *LamportClock) getName() string {
+	return c.Node
+}
+
 func (c *LamportClock) CompOtherClock(timestamp uint32) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ChatServiceClient interface {
 	Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error)
 	Leave(ctx context.Context, in *LeaveRequest, opts ...grpc.CallOption) (*LeaveResponse, error)
-	Publish(ctx context.Context, in *Message, opts ...grpc.CallOption) (*PublishResponse, error)
+	Send(ctx context.Context, in *Message, opts ...grpc.CallOption) (*PublishResponse, error)
 	Broadcast(ctx context.Context, in *BroadcastSubscription, opts ...grpc.CallOption) (ChatService_BroadcastClient, error)
 }
 
@@ -54,9 +54,9 @@ func (c *chatServiceClient) Leave(ctx context.Context, in *LeaveRequest, opts ..
 	return out, nil
 }
 
-func (c *chatServiceClient) Publish(ctx context.Context, in *Message, opts ...grpc.CallOption) (*PublishResponse, error) {
+func (c *chatServiceClient) Send(ctx context.Context, in *Message, opts ...grpc.CallOption) (*PublishResponse, error) {
 	out := new(PublishResponse)
-	err := c.cc.Invoke(ctx, "/ChatService/Publish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ChatService/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (x *chatServiceBroadcastClient) Recv() (*Message, error) {
 type ChatServiceServer interface {
 	Join(context.Context, *JoinRequest) (*JoinResponse, error)
 	Leave(context.Context, *LeaveRequest) (*LeaveResponse, error)
-	Publish(context.Context, *Message) (*PublishResponse, error)
+	Send(context.Context, *Message) (*PublishResponse, error)
 	Broadcast(*BroadcastSubscription, ChatService_BroadcastServer) error
 	mustEmbedUnimplementedChatServiceServer()
 }
@@ -116,8 +116,8 @@ func (UnimplementedChatServiceServer) Join(context.Context, *JoinRequest) (*Join
 func (UnimplementedChatServiceServer) Leave(context.Context, *LeaveRequest) (*LeaveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
 }
-func (UnimplementedChatServiceServer) Publish(context.Context, *Message) (*PublishResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
+func (UnimplementedChatServiceServer) Send(context.Context, *Message) (*PublishResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedChatServiceServer) Broadcast(*BroadcastSubscription, ChatService_BroadcastServer) error {
 	return status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
@@ -171,20 +171,20 @@ func _ChatService_Leave_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ChatService_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ChatService_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Message)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChatServiceServer).Publish(ctx, in)
+		return srv.(ChatServiceServer).Send(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ChatService/Publish",
+		FullMethod: "/ChatService/Send",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChatServiceServer).Publish(ctx, req.(*Message))
+		return srv.(ChatServiceServer).Send(ctx, req.(*Message))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -226,8 +226,8 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChatService_Leave_Handler,
 		},
 		{
-			MethodName: "Publish",
-			Handler:    _ChatService_Publish_Handler,
+			MethodName: "Send",
+			Handler:    _ChatService_Send_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
