@@ -109,7 +109,6 @@ func (s server) Join(ctx context.Context, req *api.JoinRequest) (*api.JoinRespon
 
 func (s *server) addClient(id string) error {
 	s.clientsMu.Lock()
-
 	defer s.clientsMu.Unlock()
 
 	if _, ok := s.Clients[id]; !ok {
@@ -170,7 +169,7 @@ func (s server) removeClient(id string) error {
 func (s server) Send(ctx context.Context, req *api.Message) (*api.PublishResponse, error) {
 	s.TickLamport()
 
-	// remove the client from the broadcast
+	// send the client message to all the clients
 	s.clientSend(fmt.Sprintf("%s: %s", req.GetLamport(), req.GetContent()))
 
 	return &api.PublishResponse{
@@ -184,69 +183,57 @@ func (s server) Send(ctx context.Context, req *api.Message) (*api.PublishRespons
 }
 
 func (s *server) clientSend(msg string) {
-	log.Printf("Ready to broadcast message %s", msg)
-
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 
-	clients := s.Clients
-	var wg sync.WaitGroup
-	wg.Add(len(clients))
-	for _, ss := range clients {
-		go func(ss BroadcastSubscription) {
-			defer wg.Done()
-			log.Printf("Broadcasting message %s ", msg)
-			if ss.stream != nil {
-				err := ss.stream.Send(&api.Message{
-					Lamport: &api.Lamport{
-						Time:   s.GetLamport(),
-						NodeId: s.getName(),
-					},
-					Content: msg,
-				})
-				if err != nil {
-					log.Printf("Error, can not broadcast message %s: %v", msg, err)
-				}
+	for id, sub := range s.Clients {
+		if sub.stream != nil {
+			log.Printf("[%s: %d] >>>  sending message >>> %s", s.getName(), s.GetLamport(), msg)
+			err := sub.stream.Send(&api.Message{
+				Lamport: &api.Lamport{
+					Time:   s.GetLamport(),
+					NodeId: s.getName(),
+				},
+				Content: msg,
+			})
+			if err != nil {
+				log.Printf("could not send message to client %s: %v", id, err)
 			}
-		}(ss)
-
+		}
 	}
-	wg.Wait()
-	log.Printf("Finished broadcasting to %d clients: message %s", len(clients), msg)
 }
 
 // scope
 
 func (s server) Broadcast(in *api.BroadcastSubscription, bsv api.ChatService_BroadcastServer) error {
-	finished := make(chan bool)
-	err := s.addBroadcastChannelToClient(in.Receiver, bsv, finished)
+	log.Printf("Client %s wants to subscribe to broadcast", in.GetReceiver())
+	s.TickLamport()
+
+	fin := make(chan bool)
+
+	err := s.addBroadcastChannelToClient(in.GetReceiver(), bsv, fin)
 	if err != nil {
 		return err
 	}
-	for {
-		select {
-		case <-finished:
-			log.Printf("Closing stream for client %s", in.Receiver)
-			return nil
-		case <-bsv.Context().Done():
-			log.Printf("Client %s has disconnected", in.Receiver)
-			return nil
-		}
-	}
+
+	<-fin
+	log.Printf("Client %s finished broadcast subscription", in.GetReceiver())
+	return nil
 }
 
 func (s *server) addBroadcastChannelToClient(id string, cs api.ChatService_BroadcastServer, fin chan bool) error {
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 
-	_, ok := s.Clients[id]
-	if !ok {
-		return errors.New("Client has not joined yet")
+	if _, ok := s.Clients[id]; !ok {
+		log.Printf("client with id %s does not exist ", id)
+		return errors.New("client does not exist")
 	}
+
 	s.Clients[id] = BroadcastSubscription{
 		stream:   cs,
 		finished: fin,
 	}
-	log.Printf("[%s: %d] Added a subscription to Broadcast for client %s", s.getName(), s.GetLamport(), id)
+
 	return nil
 }
