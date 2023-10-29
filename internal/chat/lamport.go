@@ -17,7 +17,7 @@ func (c *LamportClock) Move() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.value++
-	log.Printf("User %s Timestamp:  %d", c.Node, c.value)
+	log.Printf("Node %s Timestamp:  %d", c.Node, c.value)
 }
 
 // get the current timestamp
@@ -37,7 +37,7 @@ func (c *LamportClock) CompOtherClock(timestamp uint32) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.value = max(c.value, timestamp) + 1
-	log.Printf("User %s Timestamp:  %d", c.Node, c.value)
+	log.Printf("Matched time for --- Node %s --- Timestamp:  %d", c.Node, c.value)
 }
 
 // get the max of two timestamps

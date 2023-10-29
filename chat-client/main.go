@@ -37,6 +37,7 @@ func main() {
 
 	c := api.NewChatServiceClient(conn)
 	join(c)
+	broadcastListener(c)
 
 	activeChat(c)
 
@@ -44,6 +45,8 @@ func main() {
 
 // client sends join request
 func join(client api.ChatServiceClient) {
+
+	log.Printf("Joining chat with -- Name: %s --- Time %d", *nameFlag, lamport.GetTimestamp())
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	lamport.Move()
@@ -58,11 +61,13 @@ func join(client api.ChatServiceClient) {
 
 	lamport.CompOtherClock(res.Lamport.GetTime())
 
-	log.Printf("Joined chat with name: %s", *nameFlag)
+	log.Printf("Hey user [%s] you joined chat at Time [%d] with status %s", *nameFlag, lamport.GetTimestamp(), res.Status)
+
 }
 
 // leave chat
 func leave(client api.ChatServiceClient) {
+	log.Printf("Leaving chat with name: %s -- time %d", *nameFlag, lamport.GetTimestamp())
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -74,20 +79,19 @@ func leave(client api.ChatServiceClient) {
 		log.Fatalf("could not connect: %v", err)
 	}
 
-	if res.GetStatus() == api.Status_OK {
+	if res.GetStatus() != api.Status_OK {
 		log.Fatalf("could not leave: %v", res.GetStatus())
 	}
-
 	lamport.CompOtherClock(res.Lamport.GetTime())
 
 	log.Printf("Left chat with name: %s", *nameFlag)
+
 }
 
 // now that user can join and leave the user should now be able to stay in the chat and chat and input messages
 
 func activeChat(client api.ChatServiceClient) {
 	active := true
-	go broadcatListner(client)
 
 	for active {
 		prompt := promptui.Select{
@@ -101,6 +105,7 @@ func activeChat(client api.ChatServiceClient) {
 
 		if input == "Leave" {
 			active = false
+			leave(client)
 		}
 
 		lamport.Move()
@@ -121,11 +126,6 @@ func activeChat(client api.ChatServiceClient) {
 					log.Fatalf("could not get input: %v", err)
 				}
 
-				if input == "Leave" {
-					active = false
-				}
-
-				lamport.Move()
 				send(client, input)
 			}
 		}
@@ -136,8 +136,8 @@ func activeChat(client api.ChatServiceClient) {
 
 // func listen for broadcast
 
-// make this in another way
-func broadcatListner(client api.ChatServiceClient) {
+// reacive the broadcast stream from the server
+func broadcastListener(client api.ChatServiceClient) {
 	log.Printf("listening for broadcast")
 	ctx := context.Background()
 
@@ -146,20 +146,29 @@ func broadcatListner(client api.ChatServiceClient) {
 		log.Fatalf("[Node %s]Could not subscribe to broadcast stream: %v", *nameFlag, err)
 	}
 
+	go handleMessages(stream)
+}
+
+func handleMessages(stream api.ChatService_BroadcastClient) {
 	for {
 		msg, err := stream.Recv()
-		if err == nil {
-			lamport.CompOtherClock(msg.Lamport.GetTime())
-			log.Printf("[Node %s: %d] <<<  reveived broadcasted message <<< %s", *nameFlag, lamport.GetTimestamp(), msg.GetContent())
+		if err != nil {
+			log.Printf("error receiving message: %v", err)
+			return
 		}
 
+		lamport.CompOtherClock(msg.Lamport.GetTime())
+		log.Printf("Node [%s] at Time [%d] received broadcasted message --- %s ", *nameFlag, lamport.GetTimestamp(), msg.GetContent())
 	}
 }
 
 // func send a chat message
 
 func send(client api.ChatServiceClient, msg string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	lamport.Move()
+	log.Printf("[Node %s: %d] Sending message >>> %s", *nameFlag, lamport.GetTimestamp(), msg)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	res, err := client.Send(ctx, &api.Message{
@@ -169,8 +178,12 @@ func send(client api.ChatServiceClient, msg string) {
 	if err != nil {
 		log.Fatalf("could not connect: %v", err)
 	}
+
 	if res.GetStatus() != api.Status_OK {
 		log.Fatalf("could not send message: %v", res.GetStatus())
 	}
 
+	lamport.CompOtherClock(res.Lamport.GetTime())
+
+	log.Printf("Node [%s] at Time [%d] sent message --- %s ", *nameFlag, lamport.GetTimestamp(), msg)
 }
