@@ -1,10 +1,10 @@
-# Project Name
+# Chitty Chat
 
 A brief description of the project.
 
 ## Table of Contents
 
-- [Project Name](#project-name)
+- [Chitty Chat](#chitty-chat)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
     - [Prerequisites](#prerequisites)
