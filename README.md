@@ -1,6 +1,6 @@
 # Chitty Chat
 
-A brief description of the project.
+Chitty chat is a distributed system, that is providing a chatting service, and keeps track of logical time using Lamport Timestamps.
 
 ## Table of Contents
 
