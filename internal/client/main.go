@@ -121,7 +121,7 @@ func activeChat(client api.ChatServiceClient) {
 				prompt := promptui.Prompt{
 					Label: "input your message and send ",
 					Validate: func(input string) error {
-						if len(input) == 0 || len(input) > 100 {
+						if len(input) == 0 || len(input) > 128 {
 							return fmt.Errorf("input must be at least 1 character or under 100 characters")
 						}
 						return nil
