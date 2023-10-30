@@ -74,7 +74,7 @@ func join(client api.ChatServiceClient) {
 // leave chat
 func leave(client api.ChatServiceClient) {
 	log.Printf("Leaving chat with name: %s -- time %d", *nameFlag, lamport.GetTimestamp())
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	res, err := client.Leave(ctx, &api.LeaveRequest{
@@ -88,8 +88,8 @@ func leave(client api.ChatServiceClient) {
 	if res.GetStatus() != api.Status_OK {
 		log.Fatalf("could not leave: %v", res.GetStatus())
 	}
-	lamport.CompOtherClock(res.Lamport.GetTime())
 
+	lamport.CompOtherClock(res.Lamport.GetTime())
 	log.Printf("Left chat with name: %s", *nameFlag)
 
 }

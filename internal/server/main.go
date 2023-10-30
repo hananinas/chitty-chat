@@ -196,7 +196,7 @@ func (s *server) broadcast(msg string) {
 	log.Printf("%d clients found", len(s.Clients))
 	for id, sub := range s.Clients {
 		if sub.stream != nil {
-			log.Printf("[Server: %s time: %d] >>>  sending message >>> %s", s.getName(), s.GetLamport(), msg)
+			log.Printf("[Server: %s time: %d] >>>  broadcasting message >>> %s", s.getName(), s.GetLamport(), msg)
 			err := sub.stream.Send(&api.Message{
 				Lamport: &api.Lamport{
 					Time:   s.GetLamport(),
