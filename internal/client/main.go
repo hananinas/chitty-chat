@@ -53,7 +53,7 @@ func StartClient(nameInput string, addrInput string) {
 func join(client api.ChatServiceClient) {
 
 	log.Printf("Joining chat with -- Name: %s --- Time %d", *nameFlag, lamport.GetTimestamp())
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	lamport.Move()
 
@@ -144,7 +144,7 @@ func activeChat(client api.ChatServiceClient) {
 
 // reacive the broadcast stream from the server
 func broadcastListener(client api.ChatServiceClient) {
-	log.Printf("listening for broadcast")
+	log.Printf("Node [%s] at Time [%d] listening for broadcasted messages", *nameFlag, lamport.GetTimestamp())
 	ctx := context.Background()
 
 	stream, err := client.Broadcast(ctx, &api.BroadcastSubscription{Receiver: *nameFlag})
@@ -158,13 +158,11 @@ func broadcastListener(client api.ChatServiceClient) {
 func handleMessages(stream api.ChatService_BroadcastClient) {
 	for {
 		msg, err := stream.Recv()
-		if err != nil {
-			log.Printf("error receiving message: %v", err)
-			return
+		if err == nil {
+			lamport.CompOtherClock(msg.Lamport.GetTime())
+			log.Printf("Node [%s] at Time [%d] received broadcasted message --- %s ", *nameFlag, lamport.GetTimestamp(), msg.GetContent())
 		}
 
-		lamport.CompOtherClock(msg.Lamport.GetTime())
-		log.Printf("Node [%s] at Time [%d] received broadcasted message --- %s ", *nameFlag, lamport.GetTimestamp(), msg.GetContent())
 	}
 }
 

@@ -26,11 +26,11 @@ type server struct {
 
 // cofniguration for the server
 type Config struct {
-	// keeps a map of all the clients that are connected to the server
+	// keeps A map of all the clients that are connected to the server
 	Clients map[string]BroadcastSubscription
 	// mutex to lock the clients map
 	clientsMu sync.Mutex
-	// a clock to keep track of the lamport timestamp of the server
+	// A clock to keep track of the lamport timestamp of the server
 	Name string
 
 	lamport chat.LamportClock
@@ -53,7 +53,7 @@ func (s *server) MoveLamport() {
 	s.lamport.Move()
 }
 
-// NewServer creates a new server
+// NewServer creates A new server
 func NewServer(name string) (*server, error) {
 	chatServer := server{
 
@@ -66,7 +66,7 @@ func NewServer(name string) (*server, error) {
 	return &chatServer, nil
 }
 
-// NewGrpcServer creates a new gRPC server and registers the ChatServiceServer
+// NewGrpcServer creates A new gRPC server and registers the ChatServiceServer
 func NewGrpcServer(name string) (*grpc.Server, error) {
 	grpcServer := grpc.NewServer()
 	s, err := NewServer(name)
@@ -82,25 +82,26 @@ func NewGrpcServer(name string) (*grpc.Server, error) {
 }
 
 // now i want to implement the methods of the server
-// Join is a method that is called when a client wants to join the chat
-// it takes a JoinRequest and returns a JoinResponse
+// Join is A method that is called when A client wants to join the chat
+// it takes A JoinRequest and returns A JoinResponse
 func (s server) Join(ctx context.Context, req *api.JoinRequest) (*api.JoinResponse, error) {
-	log.Printf("a client wants to join the chat")
-
+	log.Printf("[Server: %s time: %d] Received A JOIN req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
+	s.CompLamport(req.Lamport.GetTime())
 	// add the client to the broadcast
 	err := s.addClient(req.GetNodeName())
 	if err != nil {
 		return nil, err
 	}
 	// if the client is not in the clients map, add it to the clients map
-	// and return a JoinResponse with a status of OK
-	log.Printf("[%s: %d] Received a JOIN req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
+	// and return A JoinResponse with A status of OK
 	s.MoveLamport()
+	s.broadcast(fmt.Sprintf("Client %s joined the chat server", req.GetNodeName()))
+
 	return &api.JoinResponse{
 		NodeId: req.GetNodeName(),
 		Status: api.Status_OK,
 		Lamport: &api.Lamport{
-			NodeId: s.Name,
+			NodeId: s.getName(),
 			Time:   s.lamport.GetTimestamp(),
 		},
 	}, nil
@@ -128,11 +129,11 @@ func (s *server) addClient(id string) error {
 	return nil
 }
 
-//now that we have a client who has joined we want that client to be able to leave the broadcast
+//now that we have A client who has joined we want that client to be able to leave the broadcast
 
 func (s server) Leave(ctx context.Context, req *api.LeaveRequest) (*api.LeaveResponse, error) {
-
-	log.Printf("[%s: %d] Received a Leave req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
+	log.Printf("[Server: %s time: %d] -- Received A Leave req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
+	s.CompLamport(req.Lamport.GetTime())
 
 	// remove the client from the broadcast
 	err := s.removeClient(req.SenderId)
@@ -142,8 +143,8 @@ func (s server) Leave(ctx context.Context, req *api.LeaveRequest) (*api.LeaveRes
 		return nil, err
 	}
 
-	log.Printf("Client %s left the Chat", req.GetSenderId())
 	s.MoveLamport()
+	s.broadcast(fmt.Sprintf("Client %s left the chat server", req.GetSenderId()))
 	return &api.LeaveResponse{
 		NodeId: req.GetSenderId(),
 		Status: api.Status_OK,
@@ -160,7 +161,6 @@ func (s server) removeClient(id string) error {
 	defer s.clientsMu.Unlock()
 
 	if _, ok := s.Clients[id]; !ok {
-		log.Printf("client with id %s does not exist ", id)
 		return errors.New("client does not exist")
 	}
 
@@ -174,10 +174,10 @@ func (s server) removeClient(id string) error {
 // publish response
 
 func (s server) Send(ctx context.Context, req *api.Message) (*api.PublishResponse, error) {
-	log.Printf("[%s: %d] Received a Publish req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
-
+	log.Printf("[Server: %s time: %d] -- Received A Publish req from node %s", s.getName(), s.GetLamport(), req.Lamport.GetNodeId())
+	s.CompLamport(req.Lamport.GetTime())
 	// send the client message to all the clients
-	s.clientSend(fmt.Sprintf("%s: %s", req.GetLamport(), req.GetContent()))
+	s.broadcast(fmt.Sprintf("%s: %s", req.GetLamport(), req.GetContent()))
 
 	return &api.PublishResponse{
 		MessageHash: "",
@@ -189,13 +189,14 @@ func (s server) Send(ctx context.Context, req *api.Message) (*api.PublishRespons
 	}, nil
 }
 
-func (s *server) clientSend(msg string) {
+func (s *server) broadcast(msg string) {
 	s.clientsMu.Lock()
 	defer s.clientsMu.Unlock()
 
+	log.Printf("%d clients found", len(s.Clients))
 	for id, sub := range s.Clients {
 		if sub.stream != nil {
-			log.Printf("[%s: %d] >>>  sending message >>> %s", s.getName(), s.GetLamport(), msg)
+			log.Printf("[Server: %s time: %d] >>>  sending message >>> %s", s.getName(), s.GetLamport(), msg)
 			err := sub.stream.Send(&api.Message{
 				Lamport: &api.Lamport{
 					Time:   s.GetLamport(),
@@ -213,7 +214,7 @@ func (s *server) clientSend(msg string) {
 // scope
 
 func (s server) Broadcast(req *api.BroadcastSubscription, bsv api.ChatService_BroadcastServer) error {
-	log.Printf("[%s, %d] received req from client %s wants to subscribe to broadcast", s.getName(), s.GetLamport(), req.GetReceiver())
+	log.Printf("[Server: %s time: %d] -- Received req from client %s wants to subscribe to broadcast", s.getName(), s.GetLamport(), req.GetReceiver())
 
 	fin := make(chan bool)
 
@@ -239,7 +240,7 @@ func (s *server) addBroadcastChannelToClient(id string, cs api.ChatService_Broad
 		stream:   cs,
 		finished: fin,
 	}
-	log.Printf("Client %s finished broadcast subscription", id)
+	log.Printf("[Server: %s time: %d] -- Client %s finished broadcast subscription ", s.getName(), s.GetLamport(), id)
 
 	return nil
 }
