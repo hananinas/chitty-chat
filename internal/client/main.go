@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"context"
@@ -25,10 +25,17 @@ var (
 	lamport  = chat.LamportClock{Node: *nameFlag}
 )
 
-func main() {
+func StartClient(nameInput string, addrInput string) {
+
+	if nameInput != "" || addrInput != "" {
+		*nameFlag = nameInput
+		*addrFlag = addr
+	}
+
+	log.Printf("%s", *addrFlag)
+
 	flag.Parse()
 
-	log.Printf("Starting chat-client with name: %s and address: %s", *nameFlag, *addrFlag)
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(*addrFlag, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -37,10 +44,9 @@ func main() {
 
 	c := api.NewChatServiceClient(conn)
 	join(c)
-	broadcastListener(c)
+	go broadcastListener(c)
 
 	activeChat(c)
-
 }
 
 // client sends join request
