@@ -1,10 +1,8 @@
-package main
+package server
 
 import (
 	"log"
 	"net"
-
-	"github.com/hananinas/chitty-chat/internal/server"
 )
 
 const (
@@ -12,13 +10,13 @@ const (
 	name = "Chit-chat"
 )
 
-func main() {
+func StartServer() {
 	log.Printf("starting chat-server on port %s", port)
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("could not listen: %v", err)
 	}
-	grpcServer, err := server.NewGrpcServer(name)
+	grpcServer, err := NewGrpcServer(name)
 	if err != nil {
 		log.Fatalf("could not create server: %v", err)
 	}
