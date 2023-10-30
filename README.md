@@ -7,12 +7,13 @@ A brief description of the project.
 - [Project Name](#project-name)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
+      - [Go Installation](#go-installation)
+      - [Project Setup](#project-setup)
     - [Prerequisites](#prerequisites)
     - [Installation Steps](#installation-steps)
   - [Usage](#usage)
+    - [dev Environment](#dev-environment)
     - [Examples plus how to use](#examples-plus-how-to-use)
-      - [Go Installation](#go-installation)
-      - [Project Setup](#project-setup)
   - [Releases](#releases)
     - [Release 1.0](#release-10)
     - [Release 2.0](#release-20)
@@ -21,6 +22,17 @@ A brief description of the project.
 
 You can run the project using the release for your systems platform.
 
+#### Go Installation
+
+1. Download the Go installation package from the official website.
+2. Follow the installation instructions for your operating system.
+
+#### Project Setup
+
+1. Clone the repository.
+2. Run `go mod download` to download the project dependencies.
+3. Run `go build` to build the project.
+   
 ### Prerequisites
 
 You need to have go installed on your computer to run this project 
@@ -65,7 +77,12 @@ When you start the client you will get prompted to give the client a name and po
 ✔ Give a port for the client or leave empty for default settings: 
 ````
 
+### dev Environment  
 
+1. Clone the repository.
+2. open in your preferred ide 
+2. Run `go mod download` to download the project dependencies.
+3. run it by using the command `go run .` in th terminal
 
 ### Examples plus how to use
 
@@ -103,16 +120,7 @@ Use the arrow keys to navigate: ↓ ↑ → ←
     chat
 
 ````
-#### Go Installation
 
-1. Download the Go installation package from the official website.
-2. Follow the installation instructions for your operating system.
-
-#### Project Setup
-
-1. Clone the repository.
-2. Run `go mod download` to download the project dependencies.
-3. Run `go build` to build the project.
 
 ## Releases
 
