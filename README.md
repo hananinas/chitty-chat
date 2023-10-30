@@ -57,6 +57,8 @@ Then cd into the extracted directory and run the following in your terminal
 
 ## Usage
 
+### Examples plus how to use
+
 When the program first starts it will ask you what you want to do
 is start a Server as shown below 
 
@@ -81,10 +83,6 @@ When you start the client you will get prompted to give the client a name and po
 ✔ Give a name for the client or leave empty for default settings: █
 ✔ Give a port for the client or leave empty for default settings: 
 ````
-
-
-
-### Examples plus how to use
 
 you can leave these blank which would create a client with  
 
